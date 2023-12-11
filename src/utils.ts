@@ -48,3 +48,7 @@ export const declarationExists = (decls: ParentExtendType[], prop: string, value
 export const validateParams = (params: string, mediaQuery: boolean) => {
   return !params || (params && mediaQuery);
 };
+
+export const getWidth = ( widthOption: number | ((filePath: string) => number|undefined), file: any) =>{
+  return typeof widthOption == 'function'? widthOption(file) : widthOption
+}

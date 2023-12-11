@@ -96,7 +96,9 @@ or
 yarn add postcss-px-to-viewport-8-plugin -D
 ```
 
-## 配置参数使用与 [postcss-px-to-viewport](https://www.npmjs.com/package/postcss-px-to-viewport) 一致
+## 配置参数使用与 [postcss-px-to-viewport](https://www.npmjs.com/package/postcss-px-to-viewport) 一致。
+
+此外，添加了**_mediaOptions_** 参数：通过媒体查询给可根据不同的视口添加不同的 `viewportWidth` 和 `viewportUnit`
 
 **默认选项：**
 
@@ -115,7 +117,8 @@ yarn add postcss-px-to-viewport-8-plugin -D
   exclude: [],
   landscape: false,
   landscapeUnit: 'vw',
-  landscapeWidth: 568
+  landscapeWidth: 568,
+  mediaOpions: []
 }
 ```
 
@@ -138,6 +141,15 @@ yarn add postcss-px-to-viewport-8-plugin -D
 | `landscapeWidth` | 横屏时使用的视口宽度,,如传入函数，函数的参数为当前处理的文件路径,函数返回 `undefind` 跳过转换 | `number` | 568 |
 | `exclude` | 忽略某些文件夹下的文件或特定文件，例如 node_modules 下的文件，如果值是一个正则表达式，那么匹配这个正则的文件会被忽略，如果传入的值是一个数组，那么数组里的值必须为正则 | `Regexp` | undefined |
 | `include` | 需要转换的文件，例如只转换 'src/mobile' 下的文件 (`include: /\/src\/mobile\//`)，如果值是一个正则表达式，将包含匹配的文件，否则将排除该文件， 如果传入的值是一个数组，那么数组里的值必须为正则 | `Regexp` | undefined |
+| `mediaOptions` | 需要额外追加的媒体查询配置， 例如在屏幕宽度大于 1200px(`screen and (min-width: 1200px)`)时需要配置别的`viewportWidth`， 可以启用这个配置。 | `MediaOption[]` | [] |
+
+### `MediaOption` 说明
+
+| 参数 | 说明 | 类型 | 默认值 |
+| :-- | --- | --- | --- |
+| `mediaParam` | @media 后面跟着的参数。例如 `mediaParam: 'screen and (min-width: 1200px)'` | `string` | - |
+| `viewportWidth` | 设计稿的视口宽度,如传入函数，函数的参数为当前处理的文件路径,函数返回 `undefind` 跳过转换 | `number \| Function` | - |
+| `viewportUnit` | 希望使用的视口单位, 不传的话默认使用外面的 `viewportUnit` | `string` | vw |
 
 ## 补充说明
 

@@ -81,8 +81,12 @@ export type OptionType = {
    * 支持传入函数，函数的参数为当前处理的文件路径
    */
   landscapeWidth?: number | ((filePath: string) => number|undefined);
-
+  mediaOptions?: MediaOption[],
 };
+
+export type MediaOption = {
+  mediaParam: string;
+} & Pick<OptionType, 'viewportWidth' | 'viewportUnit'>
 
 export type ParentExtendType = { prop: string; value: string; params: string };
 

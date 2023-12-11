@@ -6,6 +6,7 @@ import {
   createPxReplace,
   declarationExists,
   getUnit,
+  getWidth,
   isExclude,
   validateParams,
 } from './utils';
@@ -29,6 +30,7 @@ const defaults: Required<Omit<OptionType, 'exclude' | 'include'>> = {
   landscape: false,
   landscapeUnit: 'vw',
   landscapeWidth: 568,
+  mediaOptions: []
 };
 
 const ignoreNextComment = 'px-to-viewport-ignore-next';
@@ -40,7 +42,10 @@ const postcssPxToViewport = (options: OptionType) => {
   const pxRegex = getUnitRegexp(opts.unitToConvert);
   const satisfyPropList = createPropListMatcher(opts.propList);
   const landscapeRules: AtRule[] = [];
-
+  const mediaRules:Array<{
+    mediaParam: string
+    rules: AtRule[]
+  }> = []
   return {
     postcssPlugin: 'postcss-px-to-viewport',
     Once(css: Root, { result }: { result: any }) {
@@ -70,14 +75,8 @@ const postcssPxToViewport = (options: OptionType) => {
           rule.walkDecls((decl) => {
             if (decl.value.indexOf(opts.unitToConvert) === -1) return;
             if (!satisfyPropList(decl.prop)) return;
-            let landscapeWidth
-            if (typeof opts.landscapeWidth === 'function') {
-              const num = opts.landscapeWidth(file)
-              if(!num)return
-              landscapeWidth = num;
-            }else{
-               landscapeWidth = opts.landscapeWidth
-            }
+            const landscapeWidth = getWidth(opts.landscapeWidth, file)
+            if (!landscapeWidth) return
 
             landscapeRule.append(
               decl.clone({
@@ -94,6 +93,33 @@ const postcssPxToViewport = (options: OptionType) => {
           }
         }
 
+        // 若配置了其他媒体查询设置， 且当前规则非媒体查询
+        if (opts.mediaOptions?.length && !rule.parent?.params) {
+          for(let i = 0; i < opts.mediaOptions.length; i++) {
+            const {viewportWidth, viewportUnit = opts.viewportUnit, mediaParam} = opts.mediaOptions[i]
+            const mediaRule = rule.clone().removeAll()
+            rule.walkDecls((decl) => {
+              if (decl.value.indexOf(opts.unitToConvert) === -1) return;
+              if (!satisfyPropList(decl.prop)) return;
+              const width = getWidth(viewportWidth!, file)
+              if (!width) return
+              mediaRule.append(decl.clone({
+                value: decl.value.replace(pxRegex, createPxReplace(opts, viewportUnit, width))
+              }))
+            })
+            if (mediaRule.nodes.length > 0) {
+              if(!mediaRules[i]) {
+                mediaRules[i] = {
+                  mediaParam,
+                  rules: []
+                }
+              }
+              mediaRules[i].rules.push(mediaRule as unknown as AtRule)
+            }
+          }
+        }
+
+        // 若当前css规则是media且未开启媒体查询单位转换配置则跳过执行后续步骤
         if (!validateParams(rule.parent?.params, opts.mediaQuery)) return;
 
         rule.walkDecls((decl, i) => {
@@ -128,24 +154,15 @@ const postcssPxToViewport = (options: OptionType) => {
 
           if (opts.landscape && params && params.indexOf('landscape') !== -1) {
             unit = opts.landscapeUnit;
-
-            if (typeof opts.landscapeWidth === 'function') {
-              const num = opts.landscapeWidth(file)
-              if(!num)return
-              size = num;
-            } else {
-              size = opts.landscapeWidth;
-            }
+            const num = getWidth(opts.landscapeWidth, file)
+            if (!num) return
+            size = num
 
           } else {
             unit = getUnit(decl.prop, opts);
-            if (typeof opts.viewportWidth === 'function') {
-              const num = opts.viewportWidth(file)
-              if(!num)return
-              size = num;
-            } else {
-              size = opts.viewportWidth;
-            }
+            const num = getWidth(opts.viewportWidth, file)
+            if(!num)return
+            size = num;
           }
 
           const value = decl.value.replace(pxRegex, createPxReplace(opts, unit!, size));
@@ -187,17 +204,31 @@ const postcssPxToViewport = (options: OptionType) => {
           params: '(orientation: landscape)',
           name: 'media'
         })
-
-        landscapeRules.forEach(function (rule) {
-          landscapeRoot.append(rule)
-        })
+        appendRule(landscapeRoot, landscapeRules)
         css.append(landscapeRoot)
+      }
+      if (mediaRules.length > 0){
+        for(let i = 0; i < mediaRules.length; i++) {
+          let item = mediaRules[i]
+          let {mediaParam, rules} = item
+          const mediaRoot = new AtRule({
+            params: mediaParam,
+            name: 'media'
+          })
+          appendRule(mediaRoot, rules)
+          css.append(mediaRoot)
+        }
       }
     }
   };
-};
+}; 
+
+function appendRule (rule: AtRule, data: AtRule[]) {
+  data.forEach(item => {
+    rule.append(item)
+  })
+}
 
 postcssPxToViewport.postcss = true;
 module.exports = postcssPxToViewport
 export default postcssPxToViewport;
-
