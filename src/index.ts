@@ -10,7 +10,7 @@ import {
   isExclude,
   validateParams,
 } from './utils';
-import objectAssign from 'object-assign';
+
 
 import { AtRule, Root, Rule } from 'postcss';
 import postcss from 'postcss';
@@ -37,7 +37,7 @@ const ignoreNextComment = 'px-to-viewport-ignore-next';
 const ignorePrevComment = 'px-to-viewport-ignore';
 
 const postcssPxToViewport = (options: OptionType) => {
-  const opts = objectAssign({}, defaults, options);
+  const opts = Object.assign({}, defaults, options)
 
   const pxRegex = getUnitRegexp(opts.unitToConvert);
   const satisfyPropList = createPropListMatcher(opts.propList);
@@ -208,6 +208,7 @@ const postcssPxToViewport = (options: OptionType) => {
         css.append(landscapeRoot)
       }
       if (mediaRules.length > 0){
+        console.log('start mediaRule generation')
         for(let i = 0; i < mediaRules.length; i++) {
           let item = mediaRules[i]
           let {mediaParam, rules} = item
